@@ -8,6 +8,7 @@
 plugins {
     // Apply the application plugin to add support for building a CLI application in Java.
     application
+    id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
 repositories {
@@ -16,8 +17,6 @@ repositories {
 }
 
 dependencies {
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-
     // This dependency is used by the application.
     implementation(libs.guava)
 
@@ -33,5 +32,19 @@ java {
 
 application {
     // Define the main class for the application.
-    mainClass = "muffindud.temptake.App"
+    mainClass = "com.github.muffindud.temptake.App"
+}
+
+// shadowJar
+tasks.shadowJar {
+    archiveBaseName.set("temptake")
+    archiveClassifier.set("")
+    archiveVersion.set("")
+    archiveExtension.set("jar")
+    mergeServiceFiles()
+    manifest {
+        attributes(
+            "Main-Class" to "com.github.muffindud.temptake.App"
+        )
+    }
 }
