@@ -1,4 +1,4 @@
-package muffindud.temptake;
+package com.github.muffindud.temptake;
 
 import org.eclipse.paho.client.mqttv3.*;
 
