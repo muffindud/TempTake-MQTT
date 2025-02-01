@@ -3,11 +3,9 @@ package com.github.muffindud.temptake;
 import org.eclipse.paho.client.mqttv3.*;
 
 public class App {
-    //    private static final String BROKER =
-//            "tcp://" + System.getenv("MQTT_BROKER") + ":" + System.getenv("MQTT_PORT");
-    private static final String BROKER = "tcp://192.168.0.23:1883";
+    private static final String BROKER = "tcp://" + System.getenv("MQTT_BROKER") + ":" + System.getenv("MQTT_PORT");
     private static final String MQTT_TOPIC = "temptake/manager";
-    private static final String MQTT_CLIENT_ID = "temptake_consumer";
+    private static final String MQTT_CLIENT_ID = "temptake-consumer";
 
     public static void main(String[] args) {
         try {
