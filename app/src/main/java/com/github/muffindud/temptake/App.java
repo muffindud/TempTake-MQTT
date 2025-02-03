@@ -1,11 +1,13 @@
 package com.github.muffindud.temptake;
 
 import org.eclipse.paho.client.mqttv3.*;
+import com.github.muffindud.temptake.Models.*;
 
 public class App {
-    private static final String BROKER = "tcp://" + System.getenv("MQTT_BROKER") + ":" + System.getenv("MQTT_PORT");
+    private static final String BROKER =
+            "tcp://" + System.getenv("MQTT_BROKER_HOST") + ":" + System.getenv("MQTT_BROKER_PORT");
     private static final String MQTT_TOPIC = "temptake/manager";
-    private static final String MQTT_CLIENT_ID = "temptake-consumer";
+    private static final String MQTT_CLIENT_ID = "temptake-consumer-" + System.getenv("HOSTNAME");
 
     public static void main(String[] args) {
         try {
@@ -20,13 +22,10 @@ public class App {
             System.out.println("Connected to MQTT broker");
 
             client.subscribe(MQTT_TOPIC, (topic, message) -> {
-                // print raw payload in hex
                 byte[] payload = message.getPayload();
-                StringBuilder hexPayload = new StringBuilder();
-                for (byte b : payload) {
-                    hexPayload.append(String.format("%02X ", b));
-                }
-                System.out.println("Received message: " + hexPayload.toString());
+
+                DataPacket dataPacket = DataPacket.fromBinary(payload);
+                System.out.println("Received message: " + dataPacket);
 
                 // TODO: Insert into database
             });
