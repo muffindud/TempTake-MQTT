@@ -2,12 +2,13 @@ package com.github.muffindud.temptake.Models;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 
 public class DataPacket {
-    int type;
-    MetaData metaData;
-    int length;
-    RawData rawData;
+    public int type;
+    public MetaData metaData;
+    public int length;
+    public RawData rawData;
 
     public static DataPacket fromBinary(byte[] data) {
         ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
@@ -17,8 +18,9 @@ public class DataPacket {
         dataPacket.metaData = MetaData.fromByteBuffer(buffer);
         dataPacket.length = Byte.toUnsignedInt(buffer.get());
 
-        byte[] rawDataBytes = new byte[dataPacket.length];
-        buffer.get(rawDataBytes);
+        byte[] rawDataBytes = new byte[32];
+        buffer.get(rawDataBytes); // The problem is here
+        System.out.println("DataPacket.fromBinary: rawDataBytes = " + Arrays.toString(rawDataBytes));
 
         ByteBuffer rawDataBuffer = ByteBuffer.wrap(rawDataBytes).order(ByteOrder.LITTLE_ENDIAN);
         dataPacket.rawData = RawData.fromByteBuffer(rawDataBuffer);
