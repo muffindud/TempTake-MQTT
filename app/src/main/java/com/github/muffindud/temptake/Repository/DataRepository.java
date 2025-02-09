@@ -27,6 +27,12 @@ public class DataRepository {
     }
 
     public int addManager(byte[] managerMac) {
+        int managerId = getManagerId(managerMac);
+
+        if (managerId != -1) {
+            return managerId;
+        }
+
         String query = "INSERT INTO Managers (MAC) VALUES (?)";
 
         try {
@@ -43,6 +49,12 @@ public class DataRepository {
     }
 
     public int addWorker(byte[] workerMac) {
+        int workerId = getWorkerId(workerMac);
+
+        if (workerId != -1) {
+            return workerId;
+        }
+
         String query = "INSERT INTO Workers (MAC) VALUES (?)";
 
         try {
