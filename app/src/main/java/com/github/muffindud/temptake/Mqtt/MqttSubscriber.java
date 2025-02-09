@@ -50,18 +50,18 @@ public class MqttSubscriber {
             client.setCallback(new MqttCallback() {
                 @Override
                 public void connectionLost(Throwable cause) {
-                    System.out.println("Connection lost " + cause.getMessage());
+                    System.out.println("Connection lost");
+                    cause.printStackTrace();
                 }
 
                 @Override
                 public void messageArrived(String topic, MqttMessage message) throws Exception {
                     byte[] payload = message.getPayload();
-                    topicHandlers.get(topic).process(payload);
 
-                    if (topicHandlers.containsKey(topic)) {
-                        topicHandlers.get(topic).process(payload);
+                    if (topicHandlers.containsKey("$share/group/" + topic)) {
+                        topicHandlers.get("$share/group/" + topic).process(payload);
                     } else {
-                        System.out.println("No handler for topic " + topic);
+                        System.out.println("No handler for topic " + "$share/group/" + topic);
                     }
                 }
 
@@ -84,27 +84,26 @@ public class MqttSubscriber {
     }
 
     private void handleManagerRegister(byte[] payload) {
-        mqttService.registerManager(payload);
         System.out.println("Received manager register");
+        mqttService.registerManager(payload);
     }
 
     private void handleManagerUnregister(byte[] payload) {
-        mqttService.unregisterManager(payload);
         System.out.println("Received manager unregister");
+        mqttService.unregisterManager(payload);
     }
 
     private void handleWorkerRegister(byte[] payload) {
+        System.out.println("Received worker register");
         mqttService.registerWorker(
             Arrays.copyOfRange(payload, 0, 6),
             Arrays.copyOfRange(payload, 6, 12)
         );
-
-        System.out.println("Received worker register");
     }
 
     private void handleWorkerUnregister(byte[] payload) {
-        mqttService.unregisterWorker(payload);
         System.out.println("Received worker unregister");
+        mqttService.unregisterWorker(payload);
     }
 
     private interface TopicHandler {
