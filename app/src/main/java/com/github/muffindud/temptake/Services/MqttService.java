@@ -6,8 +6,8 @@ import com.github.muffindud.temptake.Models.DataPacket;
 public class MqttService {
     private final DataRepository dataRepository;
 
-    public MqttService(DataRepository dataRepository) {
-        this.dataRepository = dataRepository;
+    public MqttService() {
+        this.dataRepository = new DataRepository();
     }
 
     public void insertEntry(DataPacket payload, byte[] workerMac) {
