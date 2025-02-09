@@ -31,18 +31,14 @@ public class MqttSubscriber {
     }
 
     public void start() {
-        try (MqttClient client = new MqttClient(BROKER, MQTT_CLIENT_ID, new MemoryPersistence())) {
+        try {
+            MqttClient client = new MqttClient(BROKER, MQTT_CLIENT_ID, new MemoryPersistence());
             MqttConnectOptions options = new MqttConnectOptions();
 
             options.setKeepAliveInterval(30);
             options.setAutomaticReconnect(true);
             options.setCleanSession(false);
             options.setConnectionTimeout(10);
-
-            client.connect(options);
-            System.out.println("Connected to MQTT broker as " + MQTT_CLIENT_ID);
-
-            client.subscribe(MQTT_TOPICS, new int[] {0, 0, 0, 0, 0});
 
             Map<String, TopicHandler> topicHandlers = new HashMap<>();
             topicHandlers.put(MQTT_TOPICS[0], this::handleEntry);
@@ -72,6 +68,10 @@ public class MqttSubscriber {
                 @Override
                 public void deliveryComplete(IMqttDeliveryToken token) {}
             });
+
+            client.connect(options);
+            System.out.println("Connected to MQTT broker as " + MQTT_CLIENT_ID);
+            client.subscribe(MQTT_TOPICS, new int[] {0, 0, 0, 0, 0});
         } catch (MqttException e) {
             e.printStackTrace();
         }
