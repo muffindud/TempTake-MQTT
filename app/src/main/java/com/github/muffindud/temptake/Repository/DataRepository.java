@@ -6,11 +6,21 @@ import com.github.muffindud.temptake.Models.DataPacket;
 import java.sql.*;
 
 public class DataRepository {
+    private String byteToHex(byte[] bytes) {
+        StringBuilder hexString = new StringBuilder();
+
+        for (byte b : bytes) {
+            hexString.append(String.format("%02X", b));
+        }
+
+        return hexString.toString();
+    }
+
     public void insertEntry(DataPacket dataPacket, byte[] workerMac) {
         int workerId = getWorkerId(workerMac);
 
         if (workerId != -1) {
-            String query = "INSERT INTO Entries (Temperature, Humidity, Pressure, Ppm, WorkerId) VALUES (?, ?, ?, ?, ?)";
+            String query = "INSERT INTO \"Entries\" (\"Temperature\", \"Humidity\", \"Pressure\", \"Ppm\", \"WorkerId\", \"CreatedAt\") VALUES (?, ?, ?, ?, ?, NOW())";
 
             try {
                 PreparedStatement statement = DatabaseConfig.getConnection().prepareStatement(query);
@@ -33,11 +43,11 @@ public class DataRepository {
             return managerId;
         }
 
-        String query = "INSERT INTO Managers (MAC) VALUES (?)";
+        String query = "INSERT INTO \"Managers\" (\"MAC\", \"CreatedAt\") VALUES (?, NOW())";
 
         try {
             PreparedStatement statement = DatabaseConfig.getConnection().prepareStatement(query);
-            statement.setBytes(1, managerMac);
+            statement.setString(1, byteToHex(managerMac));
             statement.executeUpdate();
 
             return getManagerId(managerMac);
@@ -55,11 +65,11 @@ public class DataRepository {
             return workerId;
         }
 
-        String query = "INSERT INTO Workers (MAC) VALUES (?)";
+        String query = "INSERT INTO \"Workers\" (\"MAC\", \"CreatedAt\") VALUES (?, NOW())";
 
         try {
             PreparedStatement statement = DatabaseConfig.getConnection().prepareStatement(query);
-            statement.setBytes(1, workerMac);
+            statement.setString(1, byteToHex(workerMac));
             statement.executeUpdate();
 
             return getWorkerId(workerMac);
@@ -89,7 +99,7 @@ public class DataRepository {
             workerId = addWorker(workerMac);
         }
 
-        String query = "INSERT INTO ManagerWorkers (ManagerId, WorkerId) VALUES (?, ?)";
+        String query = "INSERT INTO \"ManagerWorkers\" (\"ManagerId\", \"WorkerId\", \"CreatedAt\") VALUES (?, ?, NOW())";
 
         try {
             PreparedStatement statement = DatabaseConfig.getConnection().prepareStatement(query);
@@ -105,7 +115,7 @@ public class DataRepository {
         unregisterAllWorkers(managerMac);
 
         int managerId = getManagerId(managerMac);
-        String query = "UPDATE Managers SET DeletedAt = NOW() WHERE Id = ? AND DeletedAt IS NULL";
+        String query = "UPDATE \"Managers\" SET \"DeletedAt\" = NOW() WHERE \"Id\" = ? AND \"DeletedAt\" IS NULL";
 
         try {
             PreparedStatement statement = DatabaseConfig.getConnection().prepareStatement(query);
@@ -125,7 +135,7 @@ public class DataRepository {
             return;
         }
 
-        String query = "UPDATE ManagerWorkers SET DeletedAt = NOW() WHERE WorkerId = ? AND DeletedAt IS NULL";
+        String query = "UPDATE \"ManagerWorkers\" SET \"DeletedAt\" = NOW() WHERE \"WorkerId\" = ? AND \"DeletedAt\" IS NULL";
 
         try {
             PreparedStatement statement = DatabaseConfig.getConnection().prepareStatement(query);
@@ -143,7 +153,7 @@ public class DataRepository {
             return;
         }
 
-        String query = "UPDATE ManagerWorkers SET DeletedAt = NOW() WHERE ManagerId = ? AND DeletedAt IS NULL";
+        String query = "UPDATE \"ManagerWorkers\" SET \"DeletedAt\" = NOW() WHERE \"ManagerId\" = ? AND \"DeletedAt\" IS NULL";
 
         try {
             PreparedStatement statement = DatabaseConfig.getConnection().prepareStatement(query);
@@ -155,11 +165,11 @@ public class DataRepository {
     }
 
     public int getManagerId(byte[] managerMac) {
-        String query = "SELECT Id FROM Managers WHERE MAC = ?";
+        String query = "SELECT \"Id\" FROM \"Managers\" WHERE \"MAC\" = ?";
 
         try {
             PreparedStatement statement = DatabaseConfig.getConnection().prepareStatement(query);
-            statement.setBytes(1, managerMac);
+            statement.setString(1, byteToHex(managerMac));
             ResultSet resultSet = statement.executeQuery();
 
             if (resultSet.next()) {
@@ -173,11 +183,11 @@ public class DataRepository {
     }
 
     public int getWorkerId(byte[] workerMac) {
-        String query = "SELECT Id FROM Workers WHERE MAC = ?";
+        String query = "SELECT \"Id\" FROM \"Workers\" WHERE \"MAC\" = ?";
 
         try {
             PreparedStatement statement = DatabaseConfig.getConnection().prepareStatement(query);
-            statement.setBytes(1, workerMac);
+            statement.setString(1, byteToHex(workerMac));
             ResultSet resultSet = statement.executeQuery();
 
             if (resultSet.next()) {
