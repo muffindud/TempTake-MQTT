@@ -13,7 +13,6 @@ public class MqttSubscriber {
     private static final String MQTT_BROKER_PORT = System.getenv("MQTT_BROKER_PORT") != null ? System.getenv("MQTT_BROKER_PORT") : "1883";
 
     private static final String BROKER = "tcp://" + MQTT_BROKER_HOST + ":" + MQTT_BROKER_PORT;
-    // private static final String MQTT_TOPIC = "$share/group/temptake/manager";
 
     private static final String[] MQTT_TOPICS = {
         "$share/group/temptake/entry",
