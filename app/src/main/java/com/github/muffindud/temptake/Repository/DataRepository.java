@@ -114,6 +114,8 @@ public class DataRepository {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+
+        // TODO: Unlink manager from user account when user accounts are added
     }
 
     public void unregisterWorker(byte[] workerMac) {
