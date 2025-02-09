@@ -6,7 +6,7 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
 public class App {
     private static final String BROKER = "tcp://" + System.getenv("MQTT_BROKER_HOST") + ":" + System.getenv("MQTT_BROKER_PORT");
-    private static final String MQTT_TOPIC = "temptake/manager";
+    private static final String MQTT_TOPIC = "$share/group/temptake/manager";
     private static final String MQTT_CLIENT_ID = "temptake-consumer-" + System.getenv("HOSTNAME");
 
     public static void main(String[] args) {
