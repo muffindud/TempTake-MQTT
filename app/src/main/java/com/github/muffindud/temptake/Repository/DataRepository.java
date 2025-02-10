@@ -115,15 +115,6 @@ public class DataRepository {
         unregisterAllWorkers(managerMac);
 
         int managerId = getManagerId(managerMac);
-        String query = "UPDATE \"Managers\" SET \"DeletedAt\" = NOW() WHERE \"Id\" = ? AND \"DeletedAt\" IS NULL";
-
-        try {
-            PreparedStatement statement = DatabaseConfig.getConnection().prepareStatement(query);
-            statement.setInt(1, managerId);
-            statement.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
 
         // TODO: Unlink manager from user account when user accounts are added
     }
