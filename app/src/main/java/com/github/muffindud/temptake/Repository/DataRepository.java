@@ -87,7 +87,7 @@ public class DataRepository {
     public void registerWorker(byte[] managerMac, byte[] workerMac) {
         int managerId = getManagerId(managerMac);
 
-        if (managerId == -1) {
+        if (managerId == -1 || getPairedManagerId(workerMac) == managerId) {
             return;
         }
 
@@ -183,6 +183,24 @@ public class DataRepository {
 
             if (resultSet.next()) {
                 return resultSet.getInt("Id");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return -1;
+    }
+
+    public int getPairedManagerId(byte[] workerMac) {
+        String query = "SELECT \"ManagerId\" FROM \"ManagerWorkers\" WHERE \"WorkerId\" = ? AND \"DeletedAt\" IS NULL";
+
+        try {
+            PreparedStatement statement = DatabaseConfig.getConnection().prepareStatement(query);
+            statement.setInt(1, getWorkerId(workerMac));
+            ResultSet resultSet = statement.executeQuery();
+
+            if (resultSet.next()) {
+                return resultSet.getInt("ManagerId");
             }
         } catch (SQLException e) {
             e.printStackTrace();
