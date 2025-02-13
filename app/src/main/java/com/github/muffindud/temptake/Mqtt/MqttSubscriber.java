@@ -78,23 +78,23 @@ public class MqttSubscriber {
     }
 
     private void handleEntry(byte[] payload) {
+        // System.out.println("Received entry");
         DataPacket dataPacket = DataPacket.fromBinary(payload);
         mqttService.insertEntry(dataPacket, dataPacket.metaData.worker_mac);
-        System.out.println("Received entry");
     }
 
     private void handleManagerRegister(byte[] payload) {
-        System.out.println("Received manager register");
+        // System.out.println("Received manager register");
         mqttService.registerManager(payload);
     }
 
     private void handleManagerUnregister(byte[] payload) {
-        System.out.println("Received manager unregister");
+        // System.out.println("Received manager unregister");
         mqttService.unregisterManager(payload);
     }
 
     private void handleWorkerRegister(byte[] payload) {
-        System.out.println("Received worker register");
+        // System.out.println("Received worker register");
         mqttService.registerWorker(
             Arrays.copyOfRange(payload, 0, 6),
             Arrays.copyOfRange(payload, 6, 12)
@@ -102,7 +102,7 @@ public class MqttSubscriber {
     }
 
     private void handleWorkerUnregister(byte[] payload) {
-        System.out.println("Received worker unregister");
+        // System.out.println("Received worker unregister");
         mqttService.unregisterWorker(payload);
     }
 
