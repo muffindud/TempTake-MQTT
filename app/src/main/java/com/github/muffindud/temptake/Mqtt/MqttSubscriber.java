@@ -24,7 +24,7 @@ public class MqttSubscriber {
 
     private static final String MQTT_CLIENT_ID = "temptake-consumer-" + System.getenv("HOSTNAME");
 
-    private MqttService mqttService;
+    private final MqttService mqttService;
 
     public MqttSubscriber() {
         this.mqttService = new MqttService();
@@ -72,7 +72,7 @@ public class MqttSubscriber {
             client.connect(options);
             System.out.println("Connected to MQTT broker as " + MQTT_CLIENT_ID);
             client.subscribe(MQTT_TOPICS, new int[] {0, 0, 0, 0, 0});
-        } catch (MqttException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
