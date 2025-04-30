@@ -6,6 +6,11 @@ import com.github.muffindud.temptake.Models.DataPacket;
 import java.sql.*;
 
 public class DataRepository {
+    private enum ModuleType {
+        WORKER,
+        MANAGER
+    }
+
     private String byteToHex(byte[] bytes) {
         StringBuilder hexString = new StringBuilder();
 
@@ -22,8 +27,8 @@ public class DataRepository {
         if (workerId != -1) {
             String query = "INSERT INTO \"Entries\" (\"Temperature\", \"Humidity\", \"Pressure\", \"Ppm\", \"WorkerId\", \"CreatedAt\") VALUES (?, ?, ?, ?, ?, NOW())";
 
-            try {
-                PreparedStatement statement = DatabaseConfig.getConnection().prepareStatement(query);
+            try (Connection connection = DatabaseConfig.getConnection()) {
+                PreparedStatement statement = connection.prepareStatement(query);
                 statement.setFloat(1, dataPacket.rawData.temperature);
                 statement.setFloat(2, dataPacket.rawData.humidity);
                 statement.setFloat(3, dataPacket.rawData.pressure);
@@ -45,8 +50,8 @@ public class DataRepository {
 
         String query = "INSERT INTO \"Managers\" (\"MAC\", \"CreatedAt\") VALUES (?, NOW())";
 
-        try {
-            PreparedStatement statement = DatabaseConfig.getConnection().prepareStatement(query);
+        try (Connection connection = DatabaseConfig.getConnection()) {
+            PreparedStatement statement = connection.prepareStatement(query);
             statement.setString(1, byteToHex(managerMac));
             statement.executeUpdate();
 
@@ -67,8 +72,8 @@ public class DataRepository {
 
         String query = "INSERT INTO \"Workers\" (\"MAC\", \"CreatedAt\") VALUES (?, NOW())";
 
-        try {
-            PreparedStatement statement = DatabaseConfig.getConnection().prepareStatement(query);
+        try (Connection connection = DatabaseConfig.getConnection()) {
+            PreparedStatement statement = connection.prepareStatement(query);
             statement.setString(1, byteToHex(workerMac));
             statement.executeUpdate();
 
@@ -101,8 +106,8 @@ public class DataRepository {
 
         String query = "INSERT INTO \"ManagerWorkers\" (\"ManagerId\", \"WorkerId\", \"CreatedAt\") VALUES (?, ?, NOW())";
 
-        try {
-            PreparedStatement statement = DatabaseConfig.getConnection().prepareStatement(query);
+        try (Connection connection = DatabaseConfig.getConnection()) {
+            PreparedStatement statement = connection.prepareStatement(query);
             statement.setInt(1, managerId);
             statement.setInt(2, workerId);
             statement.executeUpdate();
@@ -128,8 +133,8 @@ public class DataRepository {
 
         String query = "UPDATE \"ManagerWorkers\" SET \"DeletedAt\" = NOW() WHERE \"WorkerId\" = ? AND \"DeletedAt\" IS NULL";
 
-        try {
-            PreparedStatement statement = DatabaseConfig.getConnection().prepareStatement(query);
+        try (Connection connection = DatabaseConfig.getConnection()) {
+            PreparedStatement statement = connection.prepareStatement(query);
             statement.setInt(1, workerId);
             statement.executeUpdate();
         } catch (SQLException e) {
@@ -146,8 +151,8 @@ public class DataRepository {
 
         String query = "UPDATE \"ManagerWorkers\" SET \"DeletedAt\" = NOW() WHERE \"ManagerId\" = ? AND \"DeletedAt\" IS NULL";
 
-        try {
-            PreparedStatement statement = DatabaseConfig.getConnection().prepareStatement(query);
+        try (Connection connection = DatabaseConfig.getConnection()) {
+            PreparedStatement statement = connection.prepareStatement(query);
             statement.setInt(1, managerId);
             statement.executeUpdate();
         } catch (SQLException e) {
@@ -156,29 +161,20 @@ public class DataRepository {
     }
 
     public int getManagerId(byte[] managerMac) {
-        String query = "SELECT \"Id\" FROM \"Managers\" WHERE \"MAC\" = ?";
-
-        try {
-            PreparedStatement statement = DatabaseConfig.getConnection().prepareStatement(query);
-            statement.setString(1, byteToHex(managerMac));
-            ResultSet resultSet = statement.executeQuery();
-
-            if (resultSet.next()) {
-                return resultSet.getInt("Id");
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        return -1;
+        return getModuleId(managerMac, ModuleType.MANAGER);
     }
 
     public int getWorkerId(byte[] workerMac) {
-        String query = "SELECT \"Id\" FROM \"Workers\" WHERE \"MAC\" = ?";
+        return getModuleId(workerMac, ModuleType.WORKER);
+    }
 
-        try {
-            PreparedStatement statement = DatabaseConfig.getConnection().prepareStatement(query);
-            statement.setString(1, byteToHex(workerMac));
+    private int getModuleId(byte[] moduleMac, ModuleType moduleType) {
+        String module = ModuleType.MANAGER == moduleType ? "Manager" : "Worker";
+        String query = "SELECT \"Id\" FROM \"" + module + "\" WHERE \"MAC\" = ?";
+
+        try (Connection connection = DatabaseConfig.getConnection()) {
+            PreparedStatement statement = connection.prepareStatement(query);
+            statement.setString(1, byteToHex(moduleMac));
             ResultSet resultSet = statement.executeQuery();
 
             if (resultSet.next()) {
@@ -194,8 +190,8 @@ public class DataRepository {
     public int getPairedManagerId(byte[] workerMac) {
         String query = "SELECT \"ManagerId\" FROM \"ManagerWorkers\" WHERE \"WorkerId\" = ? AND \"DeletedAt\" IS NULL";
 
-        try {
-            PreparedStatement statement = DatabaseConfig.getConnection().prepareStatement(query);
+        try (Connection connection = DatabaseConfig.getConnection()) {
+            PreparedStatement statement = connection.prepareStatement(query);
             statement.setInt(1, getWorkerId(workerMac));
             ResultSet resultSet = statement.executeQuery();
 

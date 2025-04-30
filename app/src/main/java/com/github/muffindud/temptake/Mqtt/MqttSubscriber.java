@@ -1,6 +1,8 @@
 package com.github.muffindud.temptake.Mqtt;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
@@ -9,8 +11,10 @@ import com.github.muffindud.temptake.Services.MqttService;
 import com.github.muffindud.temptake.Models.DataPacket;
 
 public class MqttSubscriber {
-    private static final String MQTT_BROKER_HOST = System.getenv("MQTT_BROKER_HOST") != null ? System.getenv("MQTT_BROKER_HOST") : "localhost";
-    private static final String MQTT_BROKER_PORT = System.getenv("MQTT_BROKER_PORT") != null ? System.getenv("MQTT_BROKER_PORT") : "1883";
+    private static final String MQTT_BROKER_HOST =
+            System.getenv("MQTT_BROKER_HOST") != null ? System.getenv("MQTT_BROKER_HOST") : "localhost";
+    private static final String MQTT_BROKER_PORT =
+            System.getenv("MQTT_BROKER_PORT") != null ? System.getenv("MQTT_BROKER_PORT") : "1883";
 
     private static final String BROKER = "tcp://" + MQTT_BROKER_HOST + ":" + MQTT_BROKER_PORT;
 
@@ -40,34 +44,14 @@ public class MqttSubscriber {
             options.setCleanSession(false);
             options.setConnectionTimeout(10);
 
-            Map<String, TopicHandler> topicHandlers = new HashMap<>();
+            ConcurrentMap<String, TopicHandler> topicHandlers = new ConcurrentHashMap<>();
             topicHandlers.put(MQTT_TOPICS[0], this::handleEntry);
             topicHandlers.put(MQTT_TOPICS[1], this::handleManagerRegister);
             topicHandlers.put(MQTT_TOPICS[2], this::handleManagerUnregister);
             topicHandlers.put(MQTT_TOPICS[3], this::handleWorkerRegister);
             topicHandlers.put(MQTT_TOPICS[4], this::handleWorkerUnregister);
 
-            client.setCallback(new MqttCallback() {
-                @Override
-                public void connectionLost(Throwable cause) {
-                    System.out.println("Connection lost");
-                    cause.printStackTrace();
-                }
-
-                @Override
-                public void messageArrived(String topic, MqttMessage message) throws Exception {
-                    byte[] payload = message.getPayload();
-
-                    if (topicHandlers.containsKey("$share/group/" + topic)) {
-                        topicHandlers.get("$share/group/" + topic).process(payload);
-                    } else {
-                        System.out.println("No handler for topic " + "$share/group/" + topic);
-                    }
-                }
-
-                @Override
-                public void deliveryComplete(IMqttDeliveryToken token) {}
-            });
+            client.setCallback(new MqttCallbackImpl(topicHandlers));
 
             client.connect(options);
             System.out.println("Connected to MQTT broker as " + MQTT_CLIENT_ID);
@@ -77,24 +61,43 @@ public class MqttSubscriber {
         }
     }
 
+    private record MqttCallbackImpl(ConcurrentMap<String, TopicHandler> topicHandlers) implements MqttCallback {
+        @Override
+        public void connectionLost(Throwable throwable) {
+            throwable.printStackTrace();
+        }
+
+        @Override
+        public void messageArrived(String mqttTopic, MqttMessage mqttMessage) {
+            byte[] payload = mqttMessage.getPayload();
+
+            if (topicHandlers.containsKey("$share/group/" + mqttTopic)) {
+                topicHandlers.get("$share/group/" + mqttTopic).process(payload);
+            } else {
+                System.out.println("No handler for topic " + "$share/group/" + mqttTopic);
+            }
+        }
+
+        @Override
+        public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {}
+    }
+
     private void handleEntry(byte[] payload) {
-        // System.out.println("Received entry");
         DataPacket dataPacket = DataPacket.fromBinary(payload);
-        mqttService.insertEntry(dataPacket, dataPacket.metaData.worker_mac);
+        if (dataPacket != null) {
+            mqttService.insertEntry(dataPacket, dataPacket.metaData.worker_mac);
+        }
     }
 
     private void handleManagerRegister(byte[] payload) {
-        // System.out.println("Received manager register");
         mqttService.registerManager(payload);
     }
 
     private void handleManagerUnregister(byte[] payload) {
-        // System.out.println("Received manager unregister");
         mqttService.unregisterManager(payload);
     }
 
     private void handleWorkerRegister(byte[] payload) {
-        // System.out.println("Received worker register");
         mqttService.registerWorker(
             Arrays.copyOfRange(payload, 0, 6),
             Arrays.copyOfRange(payload, 6, 12)
@@ -102,7 +105,6 @@ public class MqttSubscriber {
     }
 
     private void handleWorkerUnregister(byte[] payload) {
-        // System.out.println("Received worker unregister");
         mqttService.unregisterWorker(payload);
     }
 

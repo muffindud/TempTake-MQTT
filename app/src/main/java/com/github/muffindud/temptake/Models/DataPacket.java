@@ -10,21 +10,26 @@ public class DataPacket {
     public RawData rawData;
 
     public static DataPacket fromBinary(byte[] data) {
-        ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
+        try {
+            ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
 
-        DataPacket dataPacket = new DataPacket();
-        dataPacket.type = Byte.toUnsignedInt(buffer.get());
-        dataPacket.metaData = MetaData.fromByteBuffer(buffer);
-        dataPacket.length = Byte.toUnsignedInt(buffer.get());
+            DataPacket dataPacket = new DataPacket();
+            dataPacket.type = Byte.toUnsignedInt(buffer.get());
+            dataPacket.metaData = MetaData.fromByteBuffer(buffer);
+            dataPacket.length = Byte.toUnsignedInt(buffer.get());
 
-        byte[] rawDataBytes = new byte[32];
-        buffer.get(rawDataBytes);
-        // System.out.println("DataPacket.fromBinary: rawDataBytes = " + Arrays.toString(rawDataBytes));
+            byte[] rawDataBytes = new byte[32];
+            buffer.get(rawDataBytes);
 
-        ByteBuffer rawDataBuffer = ByteBuffer.wrap(rawDataBytes).order(ByteOrder.LITTLE_ENDIAN);
-        dataPacket.rawData = RawData.fromByteBuffer(rawDataBuffer);
+            ByteBuffer rawDataBuffer = ByteBuffer.wrap(rawDataBytes).order(ByteOrder.LITTLE_ENDIAN);
+            dataPacket.rawData = RawData.fromByteBuffer(rawDataBuffer);
 
-        return dataPacket;
+            return dataPacket;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return null;
     }
 
     @Override
