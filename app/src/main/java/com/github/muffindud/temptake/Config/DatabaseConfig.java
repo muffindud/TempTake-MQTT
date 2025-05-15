@@ -21,7 +21,7 @@ public class DatabaseConfig {
         static {
             while (true) {
                 try {
-                    connection = DriverManager.getConnection(DB_URL, DB_HOST, DB_PASSWORD);
+                    connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
                     break;
                 } catch (SQLException e) {
                     e.printStackTrace();
