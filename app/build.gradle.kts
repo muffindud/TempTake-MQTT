@@ -21,7 +21,7 @@ dependencies {
     implementation(libs.guava)
 
     implementation("org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5")
-    implementation("org.postgresql:postgresql:42.2.23")
+    implementation("org.postgresql:postgresql:42.7.5")
 }
 
 // Apply a specific Java toolchain to ease working on different environments.

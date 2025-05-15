@@ -12,20 +12,11 @@ public class DatabaseConfig {
     private static final String DB_URL = "jdbc:postgresql://" + DB_HOST + ":" + DB_PORT + "/" + DB_NAME;
 
     public static Connection getConnection() {
-        return InstanceHolder.connection;
-    }
-
-    private static final class InstanceHolder {
-        public static Connection connection;
-
-        static {
-            while (true) {
-                try {
-                    connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-                    break;
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
+        while (true) {
+            try {
+                return DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+            } catch (SQLException e) {
+                e.printStackTrace();
             }
         }
     }
