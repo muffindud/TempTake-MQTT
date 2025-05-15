@@ -21,11 +21,11 @@ public class DataRepository {
         return hexString.toString();
     }
 
-    public void insertEntry(DataPacket dataPacket, byte[] workerMac) {
-        int workerId = getWorkerId(workerMac);
+    public void insertEntry(DataPacket dataPacket, byte[] workerMac, byte[] managerMac) {
+        int managerWorkerId = getManagerWorkerId(managerMac, workerMac);
 
-        if (workerId != -1) {
-            String query = "INSERT INTO \"Entries\" (\"Temperature\", \"Humidity\", \"Pressure\", \"Ppm\", \"WorkerId\", \"CreatedAt\") VALUES (?, ?, ?, ?, ?, NOW())";
+        if (managerWorkerId != -1) {
+            String query = "INSERT INTO \"entry\" (\"temperature_c\", \"humidity_perc\", \"pressure_mmhg\", \"ppm\", \"manager_worker_id\", \"created_at\") VALUES (?, ?, ?, ?, ?, NOW())";
 
             try (Connection connection = DatabaseConfig.getConnection()) {
                 PreparedStatement statement = connection.prepareStatement(query);
@@ -33,7 +33,7 @@ public class DataRepository {
                 statement.setFloat(2, dataPacket.rawData.humidity);
                 statement.setFloat(3, dataPacket.rawData.pressure);
                 statement.setFloat(4, dataPacket.rawData.ppm);
-                statement.setInt(5, workerId);
+                statement.setInt(5, managerWorkerId);
                 statement.executeUpdate();
             } catch (SQLException e) {
                 e.printStackTrace();
@@ -42,20 +42,20 @@ public class DataRepository {
     }
 
     public int addManager(byte[] managerMac) {
-        int managerId = getManagerId(managerMac);
+        int managerId = getModuleId(managerMac, ModuleType.MANAGER);
 
         if (managerId != -1) {
             return managerId;
         }
 
-        String query = "INSERT INTO \"Managers\" (\"MAC\", \"CreatedAt\") VALUES (?, NOW())";
+        String query = "INSERT INTO \"manager\" (\"mac\", \"created_at\") VALUES (?, NOW())";
 
         try (Connection connection = DatabaseConfig.getConnection()) {
             PreparedStatement statement = connection.prepareStatement(query);
             statement.setString(1, byteToHex(managerMac));
             statement.executeUpdate();
 
-            return getManagerId(managerMac);
+            return getModuleId(managerMac, ModuleType.MANAGER);
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -64,20 +64,20 @@ public class DataRepository {
     }
 
     public int addWorker(byte[] workerMac) {
-        int workerId = getWorkerId(workerMac);
+        int workerId = getModuleId(workerMac, ModuleType.WORKER);
 
         if (workerId != -1) {
             return workerId;
         }
 
-        String query = "INSERT INTO \"Workers\" (\"MAC\", \"CreatedAt\") VALUES (?, NOW())";
+        String query = "INSERT INTO \"worker\" (\"mac\", \"created_at\") VALUES (?, NOW())";
 
         try (Connection connection = DatabaseConfig.getConnection()) {
             PreparedStatement statement = connection.prepareStatement(query);
             statement.setString(1, byteToHex(workerMac));
             statement.executeUpdate();
 
-            return getWorkerId(workerMac);
+            return getModuleId(workerMac, ModuleType.WORKER);
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -90,7 +90,7 @@ public class DataRepository {
     }
 
     public void registerWorker(byte[] managerMac, byte[] workerMac) {
-        int managerId = getManagerId(managerMac);
+        int managerId = getModuleId(managerMac, ModuleType.MANAGER);
 
         if (managerId == -1 || getPairedManagerId(workerMac) == managerId) {
             return;
@@ -98,13 +98,13 @@ public class DataRepository {
 
         unregisterWorker(workerMac);
 
-        int workerId = getWorkerId(workerMac);
+        int workerId = getModuleId(workerMac, ModuleType.WORKER);
 
         if (workerId == -1) {
             workerId = addWorker(workerMac);
         }
 
-        String query = "INSERT INTO \"ManagerWorkers\" (\"ManagerId\", \"WorkerId\", \"CreatedAt\") VALUES (?, ?, NOW())";
+        String query = "INSERT INTO \"manager_worker\" (\"manager_id\", \"worker_id\", \"created_at\") VALUES (?, ?, NOW())";
 
         try (Connection connection = DatabaseConfig.getConnection()) {
             PreparedStatement statement = connection.prepareStatement(query);
@@ -119,19 +119,19 @@ public class DataRepository {
     public void unregisterManager(byte[] managerMac) {
         unregisterAllWorkers(managerMac);
 
-        int managerId = getManagerId(managerMac);
+        int managerId = getModuleId(managerMac, ModuleType.MANAGER);
 
         // TODO: Unlink manager from user account when user accounts are added
     }
 
     public void unregisterWorker(byte[] workerMac) {
-        int workerId = getWorkerId(workerMac);
+        int workerId = getModuleId(workerMac, ModuleType.WORKER);
 
         if (workerId == -1) {
             return;
         }
 
-        String query = "UPDATE \"ManagerWorkers\" SET \"DeletedAt\" = NOW() WHERE \"WorkerId\" = ? AND \"DeletedAt\" IS NULL";
+        String query = "UPDATE \"manager_worker\" SET \"deleted_at\" = NOW() WHERE \"worker_id\" = ? AND \"deleted_at\" IS NULL";
 
         try (Connection connection = DatabaseConfig.getConnection()) {
             PreparedStatement statement = connection.prepareStatement(query);
@@ -143,13 +143,13 @@ public class DataRepository {
     }
 
     public void unregisterAllWorkers(byte[] managerMac) {
-        int managerId = getManagerId(managerMac);
+        int managerId = getModuleId(managerMac, ModuleType.MANAGER);
 
         if (managerId == -1) {
             return;
         }
 
-        String query = "UPDATE \"ManagerWorkers\" SET \"DeletedAt\" = NOW() WHERE \"ManagerId\" = ? AND \"DeletedAt\" IS NULL";
+        String query = "UPDATE \"manager_worker\" SET \"deleted_at\" = NOW() WHERE \"manager_id\" = ? AND \"deleted_at\" IS NULL";
 
         try (Connection connection = DatabaseConfig.getConnection()) {
             PreparedStatement statement = connection.prepareStatement(query);
@@ -160,17 +160,31 @@ public class DataRepository {
         }
     }
 
-    public int getManagerId(byte[] managerMac) {
-        return getModuleId(managerMac, ModuleType.MANAGER);
-    }
+    public int getManagerWorkerId(byte[] managerMac, byte[] workerMac) {
+        int managerId = getModuleId(managerMac, ModuleType.MANAGER);
+        int workerId = getModuleId(workerMac, ModuleType.WORKER);
 
-    public int getWorkerId(byte[] workerMac) {
-        return getModuleId(workerMac, ModuleType.WORKER);
+        String query = "Select \"id\" FROM \"manager_worker\" WHERE manager_id = ? AND worker_id = ? AND \"deleted_at\" IS NULL";
+
+        try (Connection connection = DatabaseConfig.getConnection()) {
+            PreparedStatement statement = connection.prepareStatement(query);
+            statement.setInt(1, managerId);
+            statement.setInt(2, workerId);
+            ResultSet resultSet = statement.executeQuery();
+
+            if (resultSet.next()) {
+                return resultSet.getInt("id");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return -1;
     }
 
     private int getModuleId(byte[] moduleMac, ModuleType moduleType) {
-        String module = ModuleType.MANAGER == moduleType ? "Manager" : "Worker";
-        String query = "SELECT \"Id\" FROM \"" + module + "\" WHERE \"MAC\" = ?";
+        String module = ModuleType.MANAGER == moduleType ? "manager" : "worker";
+        String query = "SELECT \"id\" FROM \"" + module + "\" WHERE \"mac\" = ?";
 
         try (Connection connection = DatabaseConfig.getConnection()) {
             PreparedStatement statement = connection.prepareStatement(query);
@@ -178,7 +192,7 @@ public class DataRepository {
             ResultSet resultSet = statement.executeQuery();
 
             if (resultSet.next()) {
-                return resultSet.getInt("Id");
+                return resultSet.getInt("id");
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -188,11 +202,11 @@ public class DataRepository {
     }
 
     public int getPairedManagerId(byte[] workerMac) {
-        String query = "SELECT \"ManagerId\" FROM \"ManagerWorkers\" WHERE \"WorkerId\" = ? AND \"DeletedAt\" IS NULL";
+        String query = "SELECT manager_id FROM \"manager_worker\" WHERE \"worker_id\" = ? AND \"deleted_at\" IS NULL";
 
         try (Connection connection = DatabaseConfig.getConnection()) {
             PreparedStatement statement = connection.prepareStatement(query);
-            statement.setInt(1, getWorkerId(workerMac));
+            statement.setInt(1, getModuleId(workerMac, ModuleType.WORKER));
             ResultSet resultSet = statement.executeQuery();
 
             if (resultSet.next()) {
