@@ -85,7 +85,7 @@ public class MqttSubscriber {
     private void handleEntry(byte[] payload) {
         DataPacket dataPacket = DataPacket.fromBinary(payload);
         if (dataPacket != null) {
-            mqttService.insertEntry(dataPacket, dataPacket.metaData.worker_mac, dataPacket.metaData.manager_mac);
+            mqttService.insertEntry(dataPacket);
         }
     }
 

@@ -10,8 +10,8 @@ public class MqttService {
         this.dataRepository = new DataRepository();
     }
 
-    public void insertEntry(DataPacket payload, byte[] workerMac, byte[] managerMac) {
-        dataRepository.insertEntry(payload, workerMac, managerMac);
+    public void insertEntry(DataPacket payload) {
+        dataRepository.insertEntry(payload);
     }
 
     public void registerManager(byte[] managerMac) {

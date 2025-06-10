@@ -21,8 +21,10 @@ public class DataRepository {
         return hexString.toString();
     }
 
-    public void insertEntry(DataPacket dataPacket, byte[] workerMac, byte[] managerMac) {
-        int managerWorkerId = getManagerWorkerId(managerMac, workerMac);
+    public void insertEntry(DataPacket dataPacket) {
+        byte[] workerMac = dataPacket.metaData.worker_mac;
+
+        int managerWorkerId = getManagerWorkerId(workerMac);
 
         if (managerWorkerId == -1) {
             return;
@@ -162,17 +164,15 @@ public class DataRepository {
         }
     }
 
-    public int getManagerWorkerId(byte[] managerMac, byte[] workerMac) {
-        int managerId = getModuleId(managerMac, ModuleType.MANAGER);
+    public int getManagerWorkerId(byte[] workerMac) {
         int workerId = getModuleId(workerMac, ModuleType.WORKER);
         int managerWorkerId = -1;
 
-        String query = "SELECT id FROM manager_worker WHERE manager_id = ? AND worker_id = ? AND deleted_at IS NULL;";
+        String query = "SELECT id FROM manager_worker WHERE worker_id = ? AND deleted_at IS NULL;";
 
         try (Connection connection = DatabaseConfig.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
-            statement.setInt(1, managerId);
-            statement.setInt(2, workerId);
+            statement.setInt(1, workerId);
 
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (resultSet.next()) {
